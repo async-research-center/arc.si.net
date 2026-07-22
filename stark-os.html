@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STARK OS — Research Interface v7.4.1</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+/* ── BASE ─────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#030d1a;--primary:#00d4ff;--primary-dim:rgba(0,212,255,.6);
+  --glow:rgba(0,212,255,.15);--card:rgba(3,15,38,.88);
+  --border:rgba(0,212,255,.32);--text:rgba(0,212,255,.8);
+  --muted:rgba(0,212,255,.42);--faint:rgba(0,212,255,.18);
+  --success:#22c55e;--warn:#f59e0b;--danger:#ef4444;
+  --mono:'Share Tech Mono',monospace;--hud:'Orbitron',monospace;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);
+  overflow:hidden;height:100vh;width:100vw;cursor:crosshair;user-select:none;}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
+  background:repeating-linear-gradient(to bottom,transparent 0,transparent 2px,
+    rgba(0,0,0,.09) 2px,rgba(0,0,0,.09) 4px);}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-track{background:rgba(0,212,255,.03)}
+::-webkit-scrollbar-thumb{background:rgba(0,212,255,.22)}
+
+/* ── PANEL ────────────────────────────────────────────── */
+.panel{background:var(--card);border:1px solid var(--border);
+  position:relative;overflow:hidden;}
+.panel-dot{position:absolute;width:7px;height:7px;background:var(--primary);opacity:.75}
+.panel-dot.tl{top:0;left:0} .panel-dot.tr{top:0;right:0}
+.panel-dot.bl{bottom:0;left:0} .panel-dot.br{bottom:0;right:0}
+.ptitle{font-family:var(--hud);font-size:8px;letter-spacing:.3em;color:var(--muted);
+  padding:5px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;
+  gap:7px;background:rgba(0,212,255,.025);flex-shrink:0}
+.ptitle .dot{width:4px;height:4px;border-radius:50%;background:var(--primary);
+  animation:pulse 2s infinite}
+.ptitle .add-btn{margin-left:auto;background:none;border:none;color:var(--muted);
+  cursor:pointer;font-size:14px;line-height:1;padding:0;transition:color .2s}
+.ptitle .add-btn:hover{color:var(--primary)}
+
+/* ── ANIMATIONS ───────────────────────────────────────── */
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+@keyframes scanline{0%{top:-2px}100%{top:100%}}
+@keyframes shake{0%,100%{transform:translateX(0)}15%{transform:translateX(-8px)}
+  30%{transform:translateX(8px)}45%{transform:translateX(-6px)}
+  60%{transform:translateX(6px)}75%{transform:translateX(-3px)}90%{transform:translateX(3px)}}
+@keyframes fadein{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
+@keyframes progress{from{width:0}to{width:100%}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* ── LOGIN ────────────────────────────────────────────── */
+#login{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;background:var(--bg);z-index:9999}
+#login .grid-bg{position:absolute;inset:0;
+  background-image:linear-gradient(rgba(0,212,255,.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,212,255,.04) 1px,transparent 1px);
+  background-size:60px 60px}
+#login .scanline{position:absolute;left:0;right:0;height:1px;
+  background:rgba(0,212,255,.18);animation:scanline 4s linear infinite}
+.corner-bracket{position:absolute;width:38px;height:38px;border:2px solid rgba(0,212,255,.45);border-style:solid}
+.cb-tl{top:22px;left:22px;border-right:none;border-bottom:none}
+.cb-tr{top:22px;right:22px;border-left:none;border-bottom:none}
+.cb-bl{bottom:22px;left:22px;border-right:none;border-top:none}
+.cb-br{bottom:22px;right:22px;border-left:none;border-top:none}
+.login-wrap{position:relative;z-index:10;width:350px;display:flex;flex-direction:column;
+  align-items:center;gap:28px}
+.login-logo{display:flex;flex-direction:column;align-items:center;gap:10px}
+.login-logo .logo-icon{position:relative;width:56px;height:56px;display:flex;
+  align-items:center;justify-content:center}
+.login-logo .logo-icon svg{color:var(--primary);
+  filter:drop-shadow(0 0 16px rgba(0,212,255,.9))}
+.login-logo .logo-glow{position:absolute;inset:0;background:rgba(0,212,255,.22);
+  border-radius:50%;filter:blur(14px)}
+.login-logo .logo-title{font-family:var(--hud);font-size:26px;font-weight:900;
+  letter-spacing:.4em;color:var(--primary);
+  filter:drop-shadow(0 0 10px rgba(0,212,255,.85))}
+.login-logo .logo-sub{font-size:9px;letter-spacing:.3em;color:var(--muted)}
+.login-panel{width:100%;background:var(--card);border:1px solid var(--border);
+  padding:28px;position:relative;
+  box-shadow:0 0 40px rgba(0,212,255,.06),inset 0 0 40px rgba(0,212,255,.01)}
+.lp-title{font-size:8px;letter-spacing:.35em;color:var(--muted);text-align:center;margin-bottom:22px}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.fg label{font-size:8px;letter-spacing:.28em;color:var(--muted)}
+.fg .in-wrap{position:relative}
+.hud-in{width:100%;background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.28);
+  color:var(--primary);font-family:var(--mono);font-size:12px;padding:9px 11px;
+  letter-spacing:.1em;outline:none;transition:all .2s}
+.hud-in:focus{border-color:var(--primary);background:rgba(0,212,255,.09);
+  box-shadow:0 0 12px rgba(0,212,255,.14)}
+.hud-in::placeholder{color:rgba(0,212,255,.18)}
+.eye-btn{position:absolute;right:9px;top:50%;transform:translateY(-50%);
+  background:none;border:none;color:rgba(0,212,255,.38);cursor:pointer;
+  line-height:0;padding:3px;transition:color .2s}
+.eye-btn:hover{color:rgba(0,212,255,.75)}
+.err-box{display:flex;align-items:center;gap:7px;color:#ef4444;font-size:9px;
+  letter-spacing:.18em;border:1px solid rgba(239,68,68,.3);
+  background:rgba(239,68,68,.05);padding:7px 11px;margin-bottom:10px}
+.hud-btn{width:100%;background:rgba(0,212,255,.07);border:1px solid rgba(0,212,255,.48);
+  color:var(--primary);font-family:var(--hud);font-size:10px;letter-spacing:.3em;
+  padding:11px;cursor:pointer;transition:all .2s;margin-top:6px}
+.hud-btn:hover{background:rgba(0,212,255,.16);border-color:var(--primary);
+  box-shadow:0 0 20px rgba(0,212,255,.22)}
+.hud-btn:active{transform:scale(.98)}
+.auth-status{display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px 0}
+.auth-status .a-text{font-family:var(--hud);font-size:11px;letter-spacing:.28em;
+  color:var(--primary);animation:pulse .9s infinite}
+.auth-status .a-text.granted{color:var(--success);
+  text-shadow:0 0 8px rgba(34,197,94,.8);animation:none}
+.progress-bar{width:100%;height:3px;background:rgba(0,212,255,.1);overflow:hidden}
+.progress-fill{height:100%;background:var(--primary);
+  box-shadow:0 0 8px rgba(0,212,255,.8);animation:progress 1.8s ease-in-out forwards}
+.a-sub{font-size:8px;letter-spacing:.28em;color:rgba(0,212,255,.32)}
+.login-foot{font-size:8px;letter-spacing:.22em;color:rgba(0,212,255,.22);text-align:center}
+.shake{animation:shake .6s ease}
+
+/* ── HUD WRAPPER ──────────────────────────────────────── */
+#hud{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  background:var(--bg)}
+#hud-inner{width:1280px;height:720px;transform-origin:center center;
+  display:flex;flex-direction:column;gap:6px;padding:6px;overflow:hidden}
+
+/* ── TASKBAR ──────────────────────────────────────────── */
+#taskbar{height:42px;border:1px solid rgba(0,212,255,.4);
+  background:rgba(3,12,32,.92);display:flex;align-items:center;
+  justify-content:space-between;padding:0 14px;flex-shrink:0;
+  box-shadow:0 4px 20px rgba(0,212,255,.07)}
+.tb-left{display:flex;align-items:center;gap:0}
+.tb-logo{font-family:var(--hud);font-weight:900;font-size:14px;letter-spacing:.35em;
+  color:var(--primary);display:flex;align-items:center;gap:7px;
+  border-right:1px solid rgba(0,212,255,.28);padding-right:14px;
+  filter:drop-shadow(0 0 8px rgba(0,212,255,.8))}
+.tb-apps{display:flex;gap:4px;margin-left:14px}
+.app-icon{width:26px;height:26px;display:flex;align-items:center;justify-content:center;
+  border:1px solid transparent;border-radius:2px;color:rgba(0,212,255,.45);
+  cursor:pointer;transition:all .2s;font-size:13px;background:none;
+  font-family:var(--mono)}
+.app-icon:hover{color:var(--primary);background:rgba(0,212,255,.09);
+  border-color:rgba(0,212,255,.45);box-shadow:0 0 10px rgba(0,212,255,.28)}
+.tb-right{display:flex;gap:14px;align-items:center;font-size:9px;
+  letter-spacing:.18em;color:var(--primary)}
+.tb-stat{display:flex;align-items:center;gap:5px}
+.tb-stat.green{color:var(--success);border:1px solid rgba(34,197,94,.28);
+  background:rgba(34,197,94,.07);padding:2px 7px;border-radius:2px}
+.pulse-dot{width:5px;height:5px;border-radius:50%;background:var(--primary);
+  animation:pulse 1.5s infinite}
+
+/* ── MAIN LAYOUT ──────────────────────────────────────── */
+#main{flex:1;display:flex;gap:6px;min-height:0}
+.col{display:flex;flex-direction:column;gap:6px}
+.col-l,.col-r{width:24%}
+.col-m{flex:1}
+
+/* ── ALERTS ───────────────────────────────────────────── */
+#alerts-panel{height:22%;flex-shrink:0;display:flex;flex-direction:column}
+.alerts-body{flex:1;overflow-y:auto}
+.alert-row{display:flex;align-items:flex-start;gap:7px;padding:4px 9px;
+  border-bottom:1px solid rgba(0,212,255,.06);font-size:9.5px}
+.badge{font-family:var(--hud);font-size:6.5px;padding:1px 4px;letter-spacing:.1em;
+  border:1px solid;flex-shrink:0;margin-top:1px}
+.bc{color:#ef4444;border-color:rgba(239,68,68,.45);background:rgba(239,68,68,.09)}
+.bh{color:#f59e0b;border-color:rgba(245,158,11,.45);background:rgba(245,158,11,.09)}
+.bm{color:var(--primary);border-color:rgba(0,212,255,.45);background:rgba(0,212,255,.09)}
+.bl{color:var(--muted);border-color:rgba(0,212,255,.18)}
+.alert-txt{color:rgba(0,212,255,.65);line-height:1.4}
+
+/* ── TASKS ────────────────────────────────────────────── */
+#tasks-panel{height:36%;flex-shrink:0;display:flex;flex-direction:column}
+.tasks-body{flex:1;overflow-y:auto}
+.task-row{display:flex;align-items:center;gap:7px;padding:4px 9px;
+  border-bottom:1px solid rgba(0,212,255,.06);font-size:9.5px;cursor:pointer;transition:background .15s}
+.task-row:hover{background:rgba(0,212,255,.035)}
+.task-chk{width:11px;height:11px;border:1px solid var(--border);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s}
+.task-chk.done{background:var(--success);border-color:var(--success)}
+.task-chk.prog{border-color:var(--warn);background:rgba(245,158,11,.09)}
+.task-nm{flex:1;color:rgba(0,212,255,.72)}
+.task-nm.done-txt{text-decoration:line-through;color:rgba(0,212,255,.3)}
+.tp{font-family:var(--hud);font-size:6.5px;padding:1px 4px;letter-spacing:.08em;
+  border:1px solid;flex-shrink:0}
+
+/* ── NOTES ────────────────────────────────────────────── */
+#notes-panel{flex:1;min-height:0;display:flex;flex-direction:column}
+.notes-body{flex:1;overflow-y:auto}
+.note-row{padding:6px 9px;border-bottom:1px solid rgba(0,212,255,.06);
+  cursor:pointer;transition:background .15s}
+.note-row:hover{background:rgba(0,212,255,.035)}
+.note-hdr{font-size:9.5px;color:var(--primary);display:flex;align-items:center;
+  justify-content:space-between;margin-bottom:2px}
+.note-prev{font-size:8.5px;color:rgba(0,212,255,.4);white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.note-tags{display:flex;gap:3px;margin-top:3px;flex-wrap:wrap}
+.ntag{font-size:7px;color:rgba(0,212,255,.42);border:1px solid rgba(0,212,255,.18);
+  padding:0 4px;letter-spacing:.08em}
+
+/* ── WORLD MAP ────────────────────────────────────────── */
+#map-panel{height:28%;flex-shrink:0;display:flex;flex-direction:column}
+#map-canvas{flex:1;width:100%;display:block}
+
+/* ── RADAR ────────────────────────────────────────────── */
+#radar-panel{flex:1;min-height:0;display:flex;flex-direction:column}
+.radar-body{flex:1;display:flex;align-items:center;justify-content:center;
+  padding:4px;min-height:0;position:relative}
+#radar-canvas{max-width:100%;max-height:100%}
+.radar-label{position:absolute;bottom:10px;font-family:var(--hud);font-size:8px;
+  letter-spacing:.3em;color:rgba(0,212,255,.45);animation:blink 1.5s infinite}
+
+/* ── SEARCH ───────────────────────────────────────────── */
+#search-bar{height:40px;border:1px solid rgba(0,212,255,.38);
+  background:rgba(0,212,255,.03);display:flex;align-items:center;
+  padding:0 14px;gap:10px;flex-shrink:0}
+#search-input{flex:1;background:none;border:none;color:var(--primary);
+  font-family:var(--mono);font-size:11px;letter-spacing:.15em;outline:none}
+#search-input::placeholder{color:rgba(0,212,255,.25);letter-spacing:.22em}
+.search-icon{color:rgba(0,212,255,.4);font-size:13px}
+
+/* ── BOOKMARKS ────────────────────────────────────────── */
+#bm-bar{height:55px;flex-shrink:0;border:1px solid rgba(0,212,255,.38);
+  background:var(--card);display:flex;align-items:center;padding:0 6px;
+  gap:2px;overflow-x:auto}
+.bm-item{display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:4px 8px;color:rgba(0,212,255,.45);cursor:pointer;transition:all .2s;
+  text-decoration:none;min-width:50px;border:1px solid transparent;border-radius:2px}
+.bm-item:hover{color:var(--primary);border-color:rgba(0,212,255,.38);
+  background:rgba(0,212,255,.07);filter:drop-shadow(0 0 6px rgba(0,212,255,.45))}
+.bm-icon{font-size:14px}
+.bm-lbl{font-size:6.5px;letter-spacing:.12em}
+
+/* ── CLOCK ────────────────────────────────────────────── */
+#clock-panel{height:72px;flex-shrink:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:3px}
+#clock-time{font-family:var(--hud);font-size:26px;font-weight:700;
+  letter-spacing:.14em;color:var(--primary);
+  filter:drop-shadow(0 0 10px rgba(0,212,255,.8))}
+#clock-date{font-size:8.5px;letter-spacing:.32em;color:rgba(0,212,255,.45)}
+#clock-loc{font-size:7.5px;letter-spacing:.22em;color:rgba(0,212,255,.28)}
+
+/* ── SYS MONITOR ──────────────────────────────────────── */
+#sysmon-panel{height:36%;flex-shrink:0;display:flex;flex-direction:column}
+.sysmon-body{flex:1;display:flex;flex-direction:column;gap:6px;padding:7px 9px;overflow:hidden}
+.metric{display:flex;flex-direction:column;gap:2px}
+.metric-hdr{display:flex;justify-content:space-between}
+.metric-lbl{font-family:var(--hud);font-size:7.5px;letter-spacing:.22em;color:var(--muted)}
+.metric-val{font-size:10px;color:var(--primary);font-weight:bold}
+.sparkline{width:100%;height:26px;display:block}
+
+/* ── ACTIVITY ─────────────────────────────────────────── */
+#activity-panel{flex:1;min-height:0;display:flex;flex-direction:column}
+.act-body{flex:1;overflow-y:auto;padding:2px 0}
+.act-row{display:flex;gap:5px;padding:3px 9px;border-bottom:1px solid rgba(0,212,255,.04);
+  font-size:8.5px;line-height:1.4}
+.act-time{color:rgba(0,212,255,.3);white-space:nowrap;flex-shrink:0}
+.act-type{font-family:var(--hud);font-size:6.5px;color:var(--primary);white-space:nowrap;flex-shrink:0}
+.act-msg{color:rgba(0,212,255,.52)}
+.act-row.err .act-msg{color:#ef4444}
+.act-row.wrn .act-msg{color:#f59e0b}
+.act-row.ok  .act-msg{color:var(--success)}
+
+/* ── POWER ────────────────────────────────────────────── */
+#power-panel{height:46px;flex-shrink:0;display:flex;align-items:center;
+  justify-content:space-around;padding:0 8px}
+.pw-btn{display:flex;flex-direction:column;align-items:center;gap:2px;
+  background:none;border:1px solid transparent;border-radius:2px;cursor:pointer;
+  color:rgba(0,212,255,.45);transition:all .2s;padding:3px 7px}
+.pw-btn:hover{color:var(--primary);background:rgba(0,212,255,.07);
+  border-color:rgba(0,212,255,.28)}
+.pw-icon{font-size:13px}
+.pw-lbl{font-family:var(--hud);font-size:6.5px;letter-spacing:.13em}
+
+/* ── MODAL ────────────────────────────────────────────── */
+.modal-ov{position:fixed;inset:0;background:rgba(0,5,20,.88);z-index:9990;
+  display:flex;align-items:center;justify-content:center;animation:fadein .15s ease}
+.modal-box{background:var(--card);border:1px solid var(--border);padding:22px;
+  width:370px;position:relative;box-shadow:0 0 40px rgba(0,212,255,.09)}
+.m-title{font-family:var(--hud);font-size:9px;letter-spacing:.28em;color:var(--muted);margin-bottom:14px}
+.m-field{display:flex;flex-direction:column;gap:4px;margin-bottom:11px}
+.m-field label{font-size:7.5px;letter-spacing:.22em;color:var(--muted)}
+.hud-ta{width:100%;background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.28);
+  color:var(--primary);font-family:var(--mono);font-size:11px;padding:7px 9px;
+  outline:none;resize:vertical;min-height:70px;transition:all .2s}
+.hud-ta:focus{border-color:var(--primary);box-shadow:0 0 10px rgba(0,212,255,.1)}
+.m-actions{display:flex;gap:7px;margin-top:14px}
+.btn-ok{flex:1;background:rgba(0,212,255,.09);border:1px solid rgba(0,212,255,.45);
+  color:var(--primary);font-family:var(--hud);font-size:8.5px;letter-spacing:.22em;
+  padding:7px;cursor:pointer;transition:all .2s}
+.btn-ok:hover{background:rgba(0,212,255,.18);box-shadow:0 0 15px rgba(0,212,255,.18)}
+.btn-del{background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.38);
+  color:#ef4444;font-family:var(--hud);font-size:8.5px;letter-spacing:.22em;
+  padding:7px 13px;cursor:pointer;transition:all .2s}
+.btn-del:hover{background:rgba(239,68,68,.14)}
+.btn-x{background:none;border:1px solid rgba(0,212,255,.18);color:rgba(0,212,255,.45);
+  font-family:var(--hud);font-size:8.5px;letter-spacing:.22em;
+  padding:7px 12px;cursor:pointer;transition:all .2s}
+.btn-x:hover{border-color:rgba(0,212,255,.38);color:var(--primary)}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════ LOGIN ════════════════════════════════ -->
+<div id="login">
+  <div class="grid-bg"></div>
+  <div class="scanline"></div>
+  <div class="corner-bracket cb-tl"></div>
+  <div class="corner-bracket cb-tr"></div>
+  <div class="corner-bracket cb-bl"></div>
+  <div class="corner-bracket cb-br"></div>
+
+  <div class="login-wrap">
+    <div class="login-logo">
+      <div class="logo-icon">
+        <div class="logo-glow"></div>
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+        </svg>
+      </div>
+      <div class="logo-title">STARK OS</div>
+      <div class="logo-sub">RESEARCH INTERFACE v7.4.1</div>
+    </div>
+
+    <div class="login-panel" id="login-panel">
+      <div class="panel-dot tl"></div><div class="panel-dot tr"></div>
+      <div class="panel-dot bl"></div><div class="panel-dot br"></div>
+      <div class="lp-title">OPERATOR AUTHENTICATION REQUIRED</div>
+
+      <div id="login-form-wrap">
+        <div class="fg">
+          <label>OPERATOR ID</label>
+          <div class="in-wrap">
+            <input class="hud-in" id="l-user" type="text" autocomplete="username"
+              placeholder="enter operator id" spellcheck="false">
+          </div>
+        </div>
+        <div class="fg">
+          <label>CLEARANCE CODE</label>
+          <div class="in-wrap">
+            <input class="hud-in" id="l-pass" type="password" autocomplete="current-password"
+              placeholder="enter clearance code" style="padding-right:34px">
+            <button class="eye-btn" id="eye-btn" type="button">
+              <svg id="eye-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="err-box" id="login-err" style="display:none">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span id="login-err-txt"></span>
+        </div>
+        <button class="hud-btn" id="auth-btn">AUTHENTICATE</button>
+      </div>
+
+      <div id="auth-status-wrap" style="display:none">
+        <div class="auth-status">
+          <div class="a-text" id="auth-txt">AUTHENTICATING...</div>
+          <div class="progress-bar"><div class="progress-fill" id="prog-fill"></div></div>
+          <div class="a-sub" id="auth-sub">VERIFYING BIOMETRIC SIGNATURE</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="login-foot">STARK INTERNATIONAL · CLASSIFIED SYSTEMS · LEVEL 7 CLEARANCE</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ HUD ══════════════════════════════════ -->
+<div id="hud" style="display:none">
+  <div id="hud-inner">
+
+    <!-- TASKBAR -->
+    <div id="taskbar">
+      <div class="tb-left">
+        <div class="tb-logo">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+          STARK OS
+        </div>
+        <div class="tb-apps">
+          <button class="app-icon" title="Browser">⬡</button>
+          <button class="app-icon" title="Terminal">⟩_</button>
+          <button class="app-icon" title="Files">◫</button>
+          <button class="app-icon" title="Network">⚛</button>
+          <button class="app-icon" title="Mail">✉</button>
+        </div>
+      </div>
+      <div class="tb-right">
+        <div class="tb-stat">
+          <div class="pulse-dot"></div>
+          <span>SYS.ONLINE</span>
+        </div>
+        <div class="tb-stat">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+          <span>UPLINK</span>
+        </div>
+        <div class="tb-stat green">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="6" width="18" height="12" rx="2" ry="2"/><line x1="23" y1="13" x2="23" y2="11"/></svg>
+          ARC REACTOR: 100%
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN LAYOUT -->
+    <div id="main">
+
+      <!-- LEFT COLUMN -->
+      <div class="col col-l">
+
+        <!-- ALERTS -->
+        <div class="panel col" id="alerts-panel" style="height:22%;flex-shrink:0">
+          <div class="panel-dot tl"></div><div class="panel-dot tr"></div>
+          <div class="panel-dot bl"></div><div class="panel-dot br"></div>
+          <div class="ptitle"><div class="dot"></div>ACTIVE ALERTS</div>
+          <div class="alerts-body" id="alerts-body"></div>
+        </div>
+
+        <!-- TASKS -->
+        <div class="panel col" id="tasks-panel" style="height:36%;flex-shrink:0">
+          <div class="panel-dot tl"></div><div class="panel-dot tr"></div>
+          <div class="panel-dot bl"></div><div class="panel-dot br"></div>
+          <div class="ptitle">
+            <div class="dot"></div>MISSION TASKS
+            <button class="add-btn" id="add-task-btn" title="New task">＋</button>
+          </div>
+          <div class="tasks-body" id="tasks-body"></div>
+        </div>
+
+        <!-- NOTES -->
+        <div class="panel col" id="notes-panel" style="flex:1;min-height:0">
+          <div class="panel-dot tl"></div><div class="panel-dot tr"></div>
+          <div class="panel-dot bl"></div><div class="panel-dot br"></div>
+          <div class="ptitle">
+            <div class="dot"></div>RESEARCH DATABASE
+            <button class="add-btn" id="add-note-btn" title="New note">＋</button>
+          </div>
+          <div class="notes-body" id="notes-body"></div>
+        </div>
+      </div>
+
+      <!-- MIDDLE COLUMN -->
+      <div class="col col-m">
+
+        <!-- WORLD MAP -->
+        <div class="panel col" id="map-panel" style="height:28%;flex-shrink:0">
+          <div class="panel-dot tl"></div><div class="panel-dot tr"></div>
+          <div class="panel-dot bl"></div><div class="panel-dot br"></div>
+          <div class="ptitle"><div class="dot"></div>GLOBAL NETWORK MAP</div>
+          <canvas id="map-canvas"></canvas>
+        </div>
+
+        <!-- RADAR -->
+        <div class="panel col" id="radar-panel" style="flex:1;min-height:0">
+          <div class="panel-dot tl"></div><div class="panel-dot tr"></div>
+          <div class="panel-dot bl"></div><div class="panel-dot br"></div>
+          <div class="ptitle"><div class="dot"></div>PROXIMITY SCANNER</div>
+          <div class="radar-body">
+            <canvas id="radar-canvas"></canvas>
+            <div class="radar-label">SCANNING...</div>
+          </div>
+        </div>
+
+        <!-- SEARCH -->
+        <div id="search-bar">
+          <span class="search-icon">⌕</span>
+          <input id="search-input" type="text" placeholder="ENTER COMMAND OR QUERY...">
+        </div>
+
+        <!-- BOOKMARKS -->
+        <div id="bm-bar"></div>
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <div class="col col-r">
+
+        <!-- CLOCK -->
+        <div class="panel col" id="clock-panel" style="height:68px;flex-shrink:0">
+          <div class="panel-dot tl"></div><div class="panel-dot tr"></div>
+          <div class="panel-dot bl"></div><div class="panel-dot br"></div>
+          <div id="clock-time">00:00:00</div>
+          <div id="clock-date">---.-- ----</div>
+          <div id="clock-loc">MALIBU POINT · STARK TOWER</div>
+        </div>
+
+        <!-- SYSTEM MONITOR -->
+        <div class="panel col" id="sysmon-panel" style="height:36%;flex-shrink:0">
+          <div class="panel-dot tl"></div><div class="panel-dot tr"></div>
+          <div class="panel-dot bl"></div><div class="panel-dot br"></div>
+          <div class="ptitle"><div class="dot"></div>SYSTEM DIAGNOSTICS</div>
+          <div class="sysmon-body" id="sysmon-body">
+            <div class="metric">
+              <div class="metric-hdr"><span class="metric-lbl">CPU USAGE</span><span class="metric-val" id="cpu-val">--%</span></div>
+              <canvas class="sparkline" id="cpu-spark"></canvas>
+            </div>
+            <div class="metric">
+              <div class="metric-hdr"><span class="metric-lbl">RAM USAGE</span><span class="metric-val" id="ram-val">--%</span></div>
+              <canvas class="sparkline" id="ram-spark"></canvas>
+            </div>
+            <div class="metric">
+              <div class="metric-hdr"><span class="metric-lbl">NETWORK</span><span class="metric-val" id="net-val">-- KB/s</span></div>
+              <canvas class="sparkline" id="net-spark"></canvas>
+            </div>
+            <div class="metric">
+              <div class="metric-hdr"><span class="metric-lbl">DISK I/O</span><span class="metric-val" id="dsk-val">--%</span></div>
+              <canvas class="sparkline" id="dsk-spark"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- ACTIVITY LOG -->
+        <div class="panel col" id="activity-panel" style="flex:1;min-height:0">
+          <div class="panel-dot tl"></div><div class="panel-dot tr"></div>
+          <div class="panel-dot bl"></div><div class="panel-dot br"></div>
+          <div class="ptitle"><div class="dot"></div>ACTIVITY LOG</div>
+          <div class="act-body" id="act-body"></div>
+        </div>
+
+        <!-- POWER -->
+        <div class="panel" id="power-panel" style="height:46px;flex-shrink:0">
+          <div class="panel-dot tl"></div><div class="panel-dot tr"></div>
+          <div class="panel-dot bl"></div><div class="panel-dot br"></div>
+          <button class="pw-btn"><div class="pw-icon">⊞</div><div class="pw-lbl">APPS</div></button>
+          <button class="pw-btn"><div class="pw-icon">⟳</div><div class="pw-lbl">REBOOT</div></button>
+          <button class="pw-btn"><div class="pw-icon">⊡</div><div class="pw-lbl">UPLINK</div></button>
+          <button class="pw-btn"><div class="pw-icon">⊗</div><div class="pw-lbl">SETTINGS</div></button>
+          <button class="pw-btn" id="logout-btn"><div class="pw-icon">⏻</div><div class="pw-lbl">LOGOUT</div></button>
+        </div>
+      </div>
+    </div><!-- /main -->
+  </div><!-- /hud-inner -->
+</div><!-- /hud -->
+
+<!-- ═══════════════════════ SCRIPT ══════════════════════════════════════ -->
+<script>
+'use strict';
+
+// ─── CREDENTIALS ──────────────────────────────────────────────────────────
+const VALID_USER = 'connor.moran';
+const VALID_PASS = 'helicarrier';
+
+// ─── SEED DATA ─────────────────────────────────────────────────────────────
+const SEED_NOTES = [
+  {id:1,title:'Arc Reactor Mk.IV Efficiency Analysis',priority:'CRITICAL',
+    content:'Palladium core replacement with Vibranium-composite alloy shows 340% efficiency increase. Thermal output stabilised at 0.012K variance. Recommend immediate prototype for Mk.V.',
+    tags:['#arc-reactor','#energy','#vibranium']},
+  {id:2,title:'Extremis Antidote Research Notes',priority:'HIGH',
+    content:'AIM-derived Extremis formula breakdown. Mandarin variants appear stable at 37C but exhibit thermal runaway above 42C. Inhibitor compound SI-7743 batch A shows promise.',
+    tags:['#extremis','#biotech','#antidote']},
+  {id:3,title:'JARVIS Neural Interface v2.0',priority:'HIGH',
+    content:'New synaptic bridge protocol reduces latency to 4ms. Brain-computer interface calibration requires 72hr adaptation window per operator.',
+    tags:['#jarvis','#ai','#neural']},
+  {id:4,title:'Quantum Tunnel Array Specifications',priority:'MEDIUM',
+    content:'Building on Hank Pym\'s Pym Particles research. Our array achieves 0.3mm accuracy at 400m range. Calibration drift observed after 6hrs continuous use.',
+    tags:['#quantum','#spatial','#pym-particles']},
+  {id:5,title:'SI Weapons Decommission Audit',priority:'HIGH',
+    content:'Obadiah\'s legacy contracts. 94 weapons systems still active globally. Tracing distribution network for controlled decommission protocol.',
+    tags:['#audit','#weapons','#compliance']},
+  {id:6,title:'Repulsor Field Calibration Data',priority:'MEDIUM',
+    content:'Field coherence data from Lab-7 trials. Optimal frequency 428.3 THz. Phase variance compensation algorithm needs revision for Mk.V integration.',
+    tags:['#repulsor','#energy','#field']},
+];
+
+const SEED_TASKS = [
+  {id:1,name:'Complete Arc Reactor Mk.V prototype',status:'progress',priority:'CRITICAL',project:'arc-reactor-v'},
+  {id:2,name:'Synthesise Vibranium alloy sample #3',status:'todo',priority:'HIGH',project:'vibranium-research'},
+  {id:3,name:'Upload Extremis inhibitor to SHIELD',status:'progress',priority:'HIGH',project:'extremis'},
+  {id:4,name:"Review Pepper's R&D budget proposal",status:'todo',priority:'MEDIUM',project:'operations'},
+  {id:5,name:'Calibrate repulsor array in Lab-7',status:'done',priority:'MEDIUM',project:'lab-systems'},
+  {id:6,name:'Secure satellite uplink SI-SAT-3',status:'progress',priority:'HIGH',project:'comms'},
+  {id:7,name:'Archive Project Godkiller files',status:'todo',priority:'CRITICAL',project:'archives'},
+  {id:8,name:'Run diagnostics on JARVIS core v2.1',status:'done',priority:'HIGH',project:'ai-systems'},
+];
+
+const ALERTS = [
+  {level:'CRITICAL',cls:'bc',msg:'Thermal sensor anomaly detected on Reactor Core C — monitoring active'},
+  {level:'HIGH',cls:'bh',msg:'Power fluctuation in Lab-12 — arc reactor load spike 18%'},
+  {level:'MEDIUM',cls:'bm',msg:'Satellite SI-SAT-3 signal degraded — rerouting via SI-SAT-1'},
+  {level:'LOW',cls:'bl',msg:'Backup scheduled 03:00 UTC — SI-SECURE-VAULT-7'},
+  {level:'INFO',cls:'bl',msg:'System update available v7.4.2 — pending clearance review'},
+];
+
+const BOOKMARKS = [
+  {icon:'🔬',label:'SI RESEARCH',url:'#'},
+  {icon:'🛡',label:'SHIELD INTEL',url:'#'},
+  {icon:'🌐',label:'WAKANDA EX.',url:'#'},
+  {icon:'⚗',label:'PYM TECH',url:'#'},
+  {icon:'🤖',label:'JARVIS KB',url:'#'},
+  {icon:'🧬',label:'EXTREMIS DB',url:'#'},
+  {icon:'⚡',label:'ARC SCHEMATICS',url:'#'},
+  {icon:'🛰',label:'SAT CONTROL',url:'#'},
+];
+
+const ACT_SEED = [
+  {type:'SYS.RES',cls:'ok',msg:'Arc Reactor Mk.IV stress test batch #7 completed successfully'},
+  {type:'SYS.NET',cls:'',msg:'Secure tunnel established — Wakanda Research Exchange Node'},
+  {type:'SYS.FIL',cls:'',msg:'Quantum array calibration data exported — 4.2 GB'},
+  {type:'SYS.ALE',cls:'wrn',msg:'Thermal sensor anomaly detected on Reactor Core C — monitoring'},
+  {type:'SYS.SYS',cls:'ok',msg:'Backup completed — SI-SECURE-VAULT-7 — 99.98% integrity'},
+  {type:'SYS.RES',cls:'ok',msg:'Extremis inhibitor synthesis — compound SI-7743 batch A stable'},
+  {type:'SYS.SEC',cls:'',msg:'Biometric scan verified — Dr. Potts access granted — Lab-7'},
+  {type:'SYS.NET',cls:'wrn',msg:'Satellite link degraded — SI-SAT-3 — rerouting via SI-SAT-1'},
+  {type:'SYS.SYS',cls:'',msg:'JARVIS neural bridge protocol v2.0 initialised — latency 4ms'},
+  {type:'SYS.RES',cls:'ok',msg:'Vibranium alloy density scan complete — purity 99.97%'},
+  {type:'SYS.ALE',cls:'err',msg:'Power fluctuation in Lab-12 — arc reactor load spike detected'},
+  {type:'SYS.SYS',cls:'ok',msg:'SI-OS research environment loaded — user: STARK'},
+];
+
+// ─── STATE ─────────────────────────────────────────────────────────────────
+function loadNotes(){try{return JSON.parse(localStorage.getItem('snotes'))||[...SEED_NOTES]}catch{return[...SEED_NOTES]}}
+function saveNotes(n){localStorage.setItem('snotes',JSON.stringify(n))}
+function loadTasks(){try{return JSON.parse(localStorage.getItem('stasks'))||[...SEED_TASKS]}catch{return[...SEED_TASKS]}}
+function saveTasks(t){localStorage.setItem('stasks',JSON.stringify(t))}
+
+let notes = loadNotes();
+let tasks = loadTasks();
+
+// ─── HELPERS ───────────────────────────────────────────────────────────────
+function qs(s){return document.querySelector(s)}
+function fmtTime(d){return d.toLocaleTimeString('en-US',{hour12:false})}
+function fmtAgo(d){
+  const s=Math.floor((Date.now()-d)/1000);
+  if(s<60)return`${s}s ago`;if(s<3600)return`${Math.floor(s/60)}m ago`;
+  return`${Math.floor(s/3600)}h ago`;}
+function priorityClass(p){
+  return{CRITICAL:'bc',HIGH:'bh',MEDIUM:'bm',LOW:'bl'}[p]||'bl';
+}
+
+// ─── LOGIN ─────────────────────────────────────────────────────────────────
+(function initLogin(){
+  if(sessionStorage.getItem('stark-auth')==='1'){showHUD();return;}
+  const loginEl=qs('#login');
+  const userIn=qs('#l-user');
+  const passIn=qs('#l-pass');
+  const eyeBtn=qs('#eye-btn');
+  const eyeIcon=qs('#eye-icon');
+  const authBtn=qs('#auth-btn');
+  const errBox=qs('#login-err');
+  const errTxt=qs('#login-err-txt');
+  const formWrap=qs('#login-form-wrap');
+  const statusWrap=qs('#auth-status-wrap');
+  const authTxt=qs('#auth-txt');
+  const authSub=qs('#auth-sub');
+
+  const EYE_OPEN=`<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`;
+  const EYE_CLOSED=`<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>`;
+
+  eyeBtn.addEventListener('click',()=>{
+    const show=passIn.type==='password';
+    passIn.type=show?'text':'password';
+    eyeIcon.innerHTML=show?EYE_CLOSED:EYE_OPEN;
+  });
+
+  function shake(){
+    const wp=qs('.login-wrap');
+    wp.classList.remove('shake');
+    void wp.offsetWidth;
+    wp.classList.add('shake');
+  }
+
+  function doAuth(){
+    const u=userIn.value.trim();const p=passIn.value;
+    if(u===VALID_USER&&p===VALID_PASS){
+      errBox.style.display='none';
+      formWrap.style.display='none';
+      statusWrap.style.display='block';
+      setTimeout(()=>{
+        authTxt.textContent='ACCESS GRANTED';
+        authTxt.classList.add('granted');
+        authSub.textContent='WELCOME BACK, OPERATOR MORAN';
+        setTimeout(()=>{showHUD();},900);
+      },1800);
+    } else {
+      errTxt.textContent=u!==VALID_USER?'UNKNOWN OPERATOR ID':'INVALID CLEARANCE CODE';
+      errBox.style.display='flex';
+      shake();
+    }
+  }
+
+  authBtn.addEventListener('click',doAuth);
+  passIn.addEventListener('keydown',e=>{if(e.key==='Enter')doAuth();});
+  userIn.addEventListener('keydown',e=>{if(e.key==='Enter')passIn.focus();});
+  userIn.addEventListener('input',()=>{errBox.style.display='none';});
+  passIn.addEventListener('input',()=>{errBox.style.display='none';});
+  userIn.focus();
+})();
+
+function showHUD(){
+  sessionStorage.setItem('stark-auth','1');
+  qs('#login').style.display='none';
+  qs('#hud').style.display='flex';
+  initHUD();
+}
+
+// ─── HUD INIT ──────────────────────────────────────────────────────────────
+function initHUD(){
+  renderAlerts();
+  renderTasks();
+  renderNotes();
+  renderBookmarks();
+  renderActivityLog();
+  startClock();
+  startScale();
+  startRadar();
+  startWorldMap();
+  startSysMon();
+  startActivityStream();
+
+  qs('#logout-btn').addEventListener('click',()=>{
+    sessionStorage.removeItem('stark-auth');
+    location.reload();
+  });
+
+  qs('#add-note-btn').addEventListener('click',()=>openNoteModal(null));
+  qs('#add-task-btn').addEventListener('click',()=>openTaskModal(null));
+}
+
+// ─── SCALE TO FIT ──────────────────────────────────────────────────────────
+function startScale(){
+  const inner=qs('#hud-inner');
+  function scale(){
+    const s=Math.min(window.innerWidth/1280,window.innerHeight/720);
+    inner.style.transform=`scale(${s})`;
+  }
+  scale();
+  window.addEventListener('resize',scale);
+}
+
+// ─── CLOCK ─────────────────────────────────────────────────────────────────
+function startClock(){
+  const timeEl=qs('#clock-time');const dateEl=qs('#clock-date');
+  const days=['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  const months=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  function tick(){
+    const d=new Date();
+    const h=String(d.getHours()).padStart(2,'0');
+    const m=String(d.getMinutes()).padStart(2,'0');
+    const s=String(d.getSeconds()).padStart(2,'0');
+    timeEl.textContent=`${h}:${m}:${s}`;
+    dateEl.textContent=`${days[d.getDay()]} ${String(d.getDate()).padStart(2,'0')} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  }
+  tick();setInterval(tick,1000);
+}
+
+// ─── ALERTS ────────────────────────────────────────────────────────────────
+function renderAlerts(){
+  const b=qs('#alerts-body');b.innerHTML='';
+  ALERTS.forEach(a=>{
+    const d=document.createElement('div');d.className='alert-row';
+    d.innerHTML=`<span class="badge ${a.cls}">${a.level}</span><span class="alert-txt">${a.msg}</span>`;
+    b.appendChild(d);
+  });
+}
+
+// ─── TASKS ─────────────────────────────────────────────────────────────────
+function renderTasks(){
+  const b=qs('#tasks-body');b.innerHTML='';
+  tasks.forEach(t=>{
+    const d=document.createElement('div');d.className='task-row';
+    const chkCls=t.status==='done'?'done':t.status==='progress'?'prog':'';
+    const chk=t.status==='done'?'✓':t.status==='progress'?'●':'';
+    const nCls=t.status==='done'?'done-txt':'';
+    const pc=priorityClass(t.priority);
+    d.innerHTML=`
+      <div class="task-chk ${chkCls}" data-id="${t.id}">${chk}</div>
+      <span class="task-nm ${nCls}">${t.name}</span>
+      <span class="badge ${pc} tp">${t.priority}</span>`;
+    d.querySelector('.task-chk').addEventListener('click',e=>{
+      e.stopPropagation();
+      const task=tasks.find(x=>x.id===t.id);
+      if(!task)return;
+      task.status=task.status==='done'?'todo':task.status==='todo'?'progress':'done';
+      saveTasks(tasks);renderTasks();
+    });
+    d.addEventListener('click',()=>openTaskModal(t.id));
+    b.appendChild(d);
+  });
+}
+
+// ─── NOTES ─────────────────────────────────────────────────────────────────
+function renderNotes(){
+  const b=qs('#notes-body');b.innerHTML='';
+  notes.forEach(n=>{
+    const d=document.createElement('div');d.className='note-row';
+    const pc=priorityClass(n.priority);
+    d.innerHTML=`
+      <div class="note-hdr">
+        <span>${n.title}</span>
+        <span class="badge ${pc}" style="font-size:6.5px">${n.priority}</span>
+      </div>
+      <div class="note-prev">${n.content}</div>
+      <div class="note-tags">${(n.tags||[]).map(t=>`<span class="ntag">${t}</span>`).join('')}</div>`;
+    d.addEventListener('click',()=>openNoteModal(n.id));
+    b.appendChild(d);
+  });
+}
+
+// ─── BOOKMARKS ─────────────────────────────────────────────────────────────
+function renderBookmarks(){
+  const b=qs('#bm-bar');b.innerHTML='';
+  BOOKMARKS.forEach(bm=>{
+    const a=document.createElement('a');a.className='bm-item';
+    a.href=bm.url;a.target='_blank';a.rel='noreferrer';
+    a.innerHTML=`<span class="bm-icon">${bm.icon}</span><span class="bm-lbl">${bm.label}</span>`;
+    b.appendChild(a);
+  });
+}
+
+// ─── ACTIVITY LOG ──────────────────────────────────────────────────────────
+let actItems=[];
+function renderActivityLog(){
+  actItems=[...ACT_SEED].map((a,i)=>({...a,ts:Date.now()-i*420000}));
+  flushActivity();
+}
+function flushActivity(){
+  const b=qs('#act-body');b.innerHTML='';
+  actItems.slice().reverse().forEach(a=>{
+    const d=document.createElement('div');d.className=`act-row ${a.cls||''}`;
+    const t=new Date(a.ts);
+    const h=String(t.getHours()).padStart(2,'0');
+    const m=String(t.getMinutes()).padStart(2,'0');
+    d.innerHTML=`<span class="act-time">[${h}:${m}]</span><span class="act-type">${a.type}</span><span class="act-msg">${a.msg}</span>`;
+    b.appendChild(d);
+  });
+}
+const ACT_STREAM=[
+  {type:'SYS.NET',cls:'',msg:'Heartbeat — uplink stable — 12ms latency'},
+  {type:'SYS.RES',cls:'ok',msg:'Arc Reactor output nominal — 3.2 GJ/s'},
+  {type:'SYS.SYS',cls:'',msg:'Memory sweep complete — fragmentation 0.3%'},
+  {type:'SYS.SEC',cls:'',msg:'Perimeter scan clear — no intrusions detected'},
+  {type:'SYS.RES',cls:'',msg:'Quantum array calibration cycle complete'},
+  {type:'SYS.NET',cls:'wrn',msg:'Packet loss detected on SI-SAT-3 — 2.1%'},
+  {type:'SYS.SYS',cls:'ok',msg:'Backup incremental complete — vault integrity 100%'},
+];
+function startActivityStream(){
+  let i=0;
+  setInterval(()=>{
+    const a=ACT_STREAM[i%ACT_STREAM.length];i++;
+    actItems.push({...a,ts:Date.now()});
+    if(actItems.length>40)actItems.shift();
+    flushActivity();
+  },8000);
+}
+
+// ─── RADAR CANVAS ──────────────────────────────────────────────────────────
+function startRadar(){
+  const canvas=qs('#radar-canvas');
+  const body=canvas.parentElement;
+  const ctx=canvas.getContext('2d');
+  let blips=[];
+  let lastSize=0;
+
+  function resize(){
+    const sz=Math.min(body.clientWidth,body.clientHeight)-24;
+    if(sz===lastSize)return;
+    lastSize=sz;
+    canvas.width=sz;canvas.height=sz;
+  }
+
+  function addBlip(cx,cy,r,angle){
+    if(Math.random()<0.25){
+      const dist=(0.2+Math.random()*0.75)*r;
+      const a=angle+(Math.random()-0.5)*0.5;
+      blips.push({x:cx+dist*Math.cos(a),y:cy+dist*Math.sin(a),life:1});
+    }
+  }
+
+  function draw(){
+    resize();
+    const w=canvas.width,h=canvas.height;
+    const cx=w/2,cy=h/2,r=w/2-8;
+    ctx.clearRect(0,0,w,h);
+
+    // Background
+    ctx.fillStyle='rgba(0,5,20,0.92)';
+    ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();
+
+    // Range rings
+    for(let i=1;i<=4;i++){
+      ctx.strokeStyle=`rgba(0,212,255,${0.06+i*0.04})`;
+      ctx.lineWidth=1;
+      ctx.beginPath();ctx.arc(cx,cy,r*i/4,0,Math.PI*2);ctx.stroke();
+    }
+
+    // Cross hairs
+    ctx.strokeStyle='rgba(0,212,255,0.15)';ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.moveTo(cx-r,cy);ctx.lineTo(cx+r,cy);
+    ctx.moveTo(cx,cy-r);ctx.lineTo(cx,cy+r);
+    ctx.stroke();
+
+    // Diagonal hairs
+    ctx.strokeStyle='rgba(0,212,255,0.07)';
+    const d45=r*Math.cos(Math.PI/4);
+    ctx.beginPath();
+    ctx.moveTo(cx-d45,cy-d45);ctx.lineTo(cx+d45,cy+d45);
+    ctx.moveTo(cx+d45,cy-d45);ctx.lineTo(cx-d45,cy+d45);
+    ctx.stroke();
+
+    // Sweep
+    const angle=(Date.now()/2200)*Math.PI*2;
+    // Trail
+    const trailLen=Math.PI*0.6;
+    for(let j=0;j<20;j++){
+      const a=angle-trailLen*(j/20);
+      const a2=angle-trailLen*((j+1)/20);
+      ctx.beginPath();
+      ctx.moveTo(cx,cy);
+      ctx.arc(cx,cy,r,a2,a);
+      ctx.closePath();
+      ctx.fillStyle=`rgba(0,212,255,${0.0015*(20-j)})`;
+      ctx.fill();
+    }
+    // Sweep line
+    ctx.strokeStyle='rgba(0,212,255,0.85)';ctx.lineWidth=1.5;
+    ctx.shadowColor='rgba(0,212,255,0.7)';ctx.shadowBlur=6;
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.lineTo(cx+r*Math.cos(angle),cy+r*Math.sin(angle));
+    ctx.stroke();
+    ctx.shadowBlur=0;
+
+    // Blips
+    addBlip(cx,cy,r,angle);
+    blips=blips.filter(b=>b.life>0);
+    blips.forEach(b=>{
+      b.life-=0.008;
+      const a=b.life;
+      ctx.fillStyle=`rgba(0,255,200,${a*0.9})`;
+      ctx.shadowColor='rgba(0,255,180,0.8)';ctx.shadowBlur=4;
+      ctx.beginPath();ctx.arc(b.x,b.y,2.5,0,Math.PI*2);ctx.fill();
+      ctx.shadowBlur=0;
+    });
+
+    // Center dot
+    ctx.fillStyle='rgba(0,212,255,0.8)';ctx.shadowColor='rgba(0,212,255,1)';ctx.shadowBlur=8;
+    ctx.beginPath();ctx.arc(cx,cy,3,0,Math.PI*2);ctx.fill();
+    ctx.shadowBlur=0;
+
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// ─── WORLD MAP CANVAS ──────────────────────────────────────────────────────
+const MAP_LOCATIONS=[
+  {name:'MALIBU POINT',lat:34.03,lon:-118.67,color:'#00d4ff',pulse:true},
+  {name:'STARK TOWER',lat:40.71,lon:-74.00,color:'#00d4ff',pulse:true},
+  {name:'WAKANDA',lat:5.0,lon:36.0,color:'#a78bfa',pulse:false},
+  {name:'LONDON',lat:51.5,lon:-0.12,color:'#00d4ff',pulse:false},
+  {name:'TOKYO',lat:35.68,lon:139.69,color:'#00d4ff',pulse:false},
+  {name:'ZURICH',lat:47.37,lon:8.54,color:'#f59e0b',pulse:false},
+];
+
+function startWorldMap(){
+  const canvas=qs('#map-canvas');
+  const ctx=canvas.getContext('2d');
+
+  function resize(){
+    canvas.width=canvas.clientWidth;
+    canvas.height=canvas.clientHeight;
+  }
+
+  function latLonToXY(lat,lon,w,h){
+    const x=(lon+180)/360*w;
+    const y=(90-lat)/180*h;
+    return{x,y};
+  }
+
+  function draw(){
+    resize();
+    const w=canvas.width,h=canvas.height;
+    ctx.clearRect(0,0,w,h);
+
+    // Background
+    ctx.fillStyle='rgba(0,5,15,0.6)';
+    ctx.fillRect(0,0,w,h);
+
+    // Grid
+    ctx.strokeStyle='rgba(0,212,255,0.06)';ctx.lineWidth=1;
+    for(let lon=-180;lon<=180;lon+=30){
+      const x=(lon+180)/360*w;
+      ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke();
+    }
+    for(let lat=-90;lat<=90;lat+=30){
+      const y=(90-lat)/180*h;
+      ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();
+    }
+
+    // Equator + prime meridian (brighter)
+    ctx.strokeStyle='rgba(0,212,255,0.12)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(0,h/2);ctx.lineTo(w,h/2);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(w/2,0);ctx.lineTo(w/2,h);ctx.stroke();
+
+    // Connection lines between locations
+    const t=Date.now()/1000;
+    const pairs=[[0,1],[1,5],[0,4],[1,3],[2,1]];
+    pairs.forEach(([a,b])=>{
+      const pa=latLonToXY(MAP_LOCATIONS[a].lat,MAP_LOCATIONS[a].lon,w,h);
+      const pb=latLonToXY(MAP_LOCATIONS[b].lat,MAP_LOCATIONS[b].lon,w,h);
+      // Animated dash
+      ctx.save();
+      ctx.strokeStyle='rgba(0,212,255,0.18)';ctx.lineWidth=1;
+      ctx.setLineDash([4,8]);ctx.lineDashOffset=-t*12%12;
+      ctx.beginPath();ctx.moveTo(pa.x,pa.y);ctx.lineTo(pb.x,pb.y);ctx.stroke();
+      ctx.restore();
+    });
+
+    // Location markers
+    const pulse=Math.sin(t*3)*0.5+0.5;
+    MAP_LOCATIONS.forEach(loc=>{
+      const {x,y}=latLonToXY(loc.lat,loc.lon,w,h);
+      const c=loc.color;
+      // Pulse ring
+      if(loc.pulse){
+        ctx.beginPath();ctx.arc(x,y,6+pulse*8,0,Math.PI*2);
+        ctx.strokeStyle=`rgba(0,212,255,${0.4*(1-pulse)})`;ctx.lineWidth=1;ctx.stroke();
+      }
+      // Dot
+      ctx.fillStyle=c;
+      ctx.shadowColor=c;ctx.shadowBlur=8;
+      ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);ctx.fill();
+      ctx.shadowBlur=0;
+      // Label
+      ctx.fillStyle=`rgba(0,212,255,0.6)`;
+      ctx.font=`bold 7px 'Share Tech Mono',monospace`;
+      ctx.fillText(loc.name,x+6,y-4);
+    });
+
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// ─── SYSTEM MONITOR ────────────────────────────────────────────────────────
+const HISTORY_LEN=40;
+const histories={cpu:[],ram:[],net:[],dsk:[]};
+let sysVals={cpu:42,ram:58,net:124,dsk:31};
+
+function smoothRand(v,min,max,step=8){
+  v+=(Math.random()-0.5)*step;
+  return Math.max(min,Math.min(max,v));
+}
+
+function startSysMon(){
+  // Init histories
+  for(let i=0;i<HISTORY_LEN;i++){
+    histories.cpu.push(40+Math.random()*20);
+    histories.ram.push(55+Math.random()*15);
+    histories.net.push(80+Math.random()*200);
+    histories.dsk.push(25+Math.random()*30);
+  }
+
+  setInterval(()=>{
+    sysVals.cpu=smoothRand(sysVals.cpu,5,98,10);
+    sysVals.ram=smoothRand(sysVals.ram,40,90,5);
+    sysVals.net=smoothRand(sysVals.net,10,600,60);
+    sysVals.dsk=smoothRand(sysVals.dsk,10,80,8);
+    histories.cpu.push(sysVals.cpu);if(histories.cpu.length>HISTORY_LEN)histories.cpu.shift();
+    histories.ram.push(sysVals.ram);if(histories.ram.length>HISTORY_LEN)histories.ram.shift();
+    histories.net.push(sysVals.net);if(histories.net.length>HISTORY_LEN)histories.net.shift();
+    histories.dsk.push(sysVals.dsk);if(histories.dsk.length>HISTORY_LEN)histories.dsk.shift();
+
+    qs('#cpu-val').textContent=`${Math.round(sysVals.cpu)}%`;
+    qs('#ram-val').textContent=`${Math.round(sysVals.ram)}%`;
+    qs('#net-val').textContent=`${Math.round(sysVals.net)} KB/s`;
+    qs('#dsk-val').textContent=`${Math.round(sysVals.dsk)}%`;
+
+    drawSparkline('cpu-spark',histories.cpu,100,'rgba(0,212,255,0.8)','rgba(0,212,255,0.1)');
+    drawSparkline('ram-spark',histories.ram,100,'rgba(162,89,255,0.8)','rgba(162,89,255,0.1)');
+    drawSparkline('net-spark',histories.net,600,'rgba(34,197,94,0.8)','rgba(34,197,94,0.1)');
+    drawSparkline('dsk-spark',histories.dsk,100,'rgba(245,158,11,0.8)','rgba(245,158,11,0.08)');
+  },1500);
+
+  // Initial draw
+  drawSparkline('cpu-spark',histories.cpu,100,'rgba(0,212,255,0.8)','rgba(0,212,255,0.1)');
+  drawSparkline('ram-spark',histories.ram,100,'rgba(162,89,255,0.8)','rgba(162,89,255,0.1)');
+  drawSparkline('net-spark',histories.net,600,'rgba(34,197,94,0.8)','rgba(34,197,94,0.1)');
+  drawSparkline('dsk-spark',histories.dsk,100,'rgba(245,158,11,0.8)','rgba(245,158,11,0.08)');
+
+  qs('#cpu-val').textContent=`${Math.round(sysVals.cpu)}%`;
+  qs('#ram-val').textContent=`${Math.round(sysVals.ram)}%`;
+  qs('#net-val').textContent=`${Math.round(sysVals.net)} KB/s`;
+  qs('#dsk-val').textContent=`${Math.round(sysVals.dsk)}%`;
+}
+
+function drawSparkline(id,data,maxVal,lineColor,fillColor){
+  const canvas=qs(`#${id}`);
+  if(!canvas)return;
+  canvas.width=canvas.clientWidth||200;
+  canvas.height=canvas.clientHeight||26;
+  const ctx=canvas.getContext('2d');
+  const w=canvas.width,h=canvas.height;
+  const pad=2;
+  ctx.clearRect(0,0,w,h);
+  if(!data.length)return;
+  const step=(w-pad*2)/(data.length-1);
+  const toY=v=>h-pad-(v/maxVal)*(h-pad*2);
+  ctx.beginPath();
+  data.forEach((v,i)=>{
+    const x=pad+i*step,y=toY(v);
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  // Stroke
+  ctx.strokeStyle=lineColor;ctx.lineWidth=1.5;ctx.stroke();
+  // Fill
+  ctx.lineTo(pad+(data.length-1)*step,h-pad);
+  ctx.lineTo(pad,h-pad);ctx.closePath();
+  ctx.fillStyle=fillColor;ctx.fill();
+}
+
+// ─── NOTE MODAL ────────────────────────────────────────────────────────────
+function openNoteModal(id){
+  const note=id?notes.find(n=>n.id===id):null;
+  const ov=document.createElement('div');ov.className='modal-ov';
+  ov.innerHTML=`
+    <div class="modal-box">
+      <div class="panel-dot tl"></div><div class="panel-dot tr"></div>
+      <div class="panel-dot bl"></div><div class="panel-dot br"></div>
+      <div class="m-title">${note?'EDIT RESEARCH NOTE':'NEW RESEARCH NOTE'}</div>
+      <div class="m-field"><label>TITLE</label>
+        <input class="hud-in" id="m-note-title" value="${note?note.title.replace(/"/g,'&quot;'):''}" placeholder="note title"></div>
+      <div class="m-field"><label>CONTENT</label>
+        <textarea class="hud-ta" id="m-note-content" rows="4">${note?note.content:''}</textarea></div>
+      <div class="m-field"><label>TAGS (comma separated)</label>
+        <input class="hud-in" id="m-note-tags" value="${note?(note.tags||[]).join(', '):''}" placeholder="#tag1, #tag2"></div>
+      <div class="m-field"><label>PRIORITY</label>
+        <select class="hud-in" id="m-note-pri">
+          ${['CRITICAL','HIGH','MEDIUM','LOW'].map(p=>`<option ${note&&note.priority===p?'selected':''}>${p}</option>`).join('')}
+        </select></div>
+      <div class="m-actions">
+        ${note?`<button class="btn-del" id="m-del">DELETE</button>`:''}
+        <button class="btn-x" id="m-cancel">CANCEL</button>
+        <button class="btn-ok" id="m-save">SAVE</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+
+  ov.querySelector('#m-cancel').addEventListener('click',()=>ov.remove());
+  ov.addEventListener('click',e=>{if(e.target===ov)ov.remove();});
+  if(note)ov.querySelector('#m-del').addEventListener('click',()=>{
+    notes=notes.filter(n=>n.id!==id);saveNotes(notes);renderNotes();ov.remove();
+  });
+  ov.querySelector('#m-save').addEventListener('click',()=>{
+    const title=qs('#m-note-title').value.trim();
+    const content=qs('#m-note-content').value.trim();
+    const tags=qs('#m-note-tags').value.split(',').map(s=>s.trim()).filter(Boolean);
+    const priority=qs('#m-note-pri').value;
+    if(!title)return;
+    if(note){Object.assign(note,{title,content,tags,priority});}
+    else{notes.push({id:Date.now(),title,content,tags,priority});}
+    saveNotes(notes);renderNotes();ov.remove();
+  });
+}
+
+// ─── TASK MODAL ────────────────────────────────────────────────────────────
+function openTaskModal(id){
+  const task=id?tasks.find(t=>t.id===id):null;
+  const ov=document.createElement('div');ov.className='modal-ov';
+  ov.innerHTML=`
+    <div class="modal-box">
+      <div class="panel-dot tl"></div><div class="panel-dot tr"></div>
+      <div class="panel-dot bl"></div><div class="panel-dot br"></div>
+      <div class="m-title">${task?'EDIT TASK':'NEW TASK'}</div>
+      <div class="m-field"><label>TASK NAME</label>
+        <input class="hud-in" id="m-task-name" value="${task?task.name.replace(/"/g,'&quot;'):''}" placeholder="task description"></div>
+      <div class="m-field"><label>STATUS</label>
+        <select class="hud-in" id="m-task-status">
+          ${['todo','progress','done'].map(s=>`<option value="${s}" ${task&&task.status===s?'selected':''}>${s.toUpperCase()}</option>`).join('')}
+        </select></div>
+      <div class="m-field"><label>PRIORITY</label>
+        <select class="hud-in" id="m-task-pri">
+          ${['CRITICAL','HIGH','MEDIUM','LOW'].map(p=>`<option ${task&&task.priority===p?'selected':''}>${p}</option>`).join('')}
+        </select></div>
+      <div class="m-actions">
+        ${task?`<button class="btn-del" id="m-del">DELETE</button>`:''}
+        <button class="btn-x" id="m-cancel">CANCEL</button>
+        <button class="btn-ok" id="m-save">SAVE</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+
+  ov.querySelector('#m-cancel').addEventListener('click',()=>ov.remove());
+  ov.addEventListener('click',e=>{if(e.target===ov)ov.remove();});
+  if(task)ov.querySelector('#m-del').addEventListener('click',()=>{
+    tasks=tasks.filter(t=>t.id!==id);saveTasks(tasks);renderTasks();ov.remove();
+  });
+  ov.querySelector('#m-save').addEventListener('click',()=>{
+    const name=qs('#m-task-name').value.trim();
+    const status=qs('#m-task-status').value;
+    const priority=qs('#m-task-pri').value;
+    if(!name)return;
+    if(task){Object.assign(task,{name,status,priority});}
+    else{tasks.push({id:Date.now(),name,status,priority,project:'general'});}
+    saveTasks(tasks);renderTasks();ov.remove();
+  });
+}
+</script>
+</body>
+</html>
